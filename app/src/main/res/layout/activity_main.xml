@@ -13,18 +13,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Hello World!"
-        android:layout_centerInParent="true"
-         />
+        android:layout_centerInParent="true" />
 
-    <Button
-        android:layout_gravity="center"
-        android:id="@+id/start"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:background="@color/colorAccent"
-        android:text="start"
-        android:layout_below="@+id/textView"
-        android:textColor="@color/colorPrimary" />
+
 
 </RelativeLayout>

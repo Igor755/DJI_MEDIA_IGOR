@@ -10,8 +10,7 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
-import android.view.View;
-import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -25,8 +24,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import dji.common.error.DJIError;
 import dji.common.error.DJISDKError;
+import dji.common.util.CommonCallbacks;
 import dji.sdk.base.BaseComponent;
 import dji.sdk.base.BaseProduct;
+import dji.sdk.flightcontroller.FlightController;
+import dji.sdk.products.Aircraft;
 import dji.sdk.sdkmanager.DJISDKInitEvent;
 import dji.sdk.sdkmanager.DJISDKManager;
 
@@ -36,6 +38,11 @@ public class MainActivity extends AppCompatActivity {
     public static final String FLAG_CONNECTION_CHANGE = "dji_sdk_connection_change";
     private static BaseProduct mProduct;
     private Handler mHandler;
+    private FlightController flightController;
+
+    private TextView textView;
+    private String serialNumber;
+
 
     private static final String[] REQUIRED_PERMISSION_LIST = new String[]{
             Manifest.permission.VIBRATE,
@@ -64,29 +71,10 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             checkAndRequestPermissions();
         }
-
         setContentView(R.layout.activity_main);
-
         //Initialize DJI SDK Manager
         mHandler = new Handler(Looper.getMainLooper());
-
-        Button start = findViewById(R.id.start);
-        start.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                DJISDKManager.getInstance().enableBridgeModeWithBridgeAppIP("192.168.192.138");
-                boolean result = DJISDKManager.getInstance().startConnectionToProduct();
-
-                if (result)
-                    Toast.makeText(getApplicationContext(), "connected，8888", Toast.LENGTH_LONG).show();
-                else
-                    Toast.makeText(getApplicationContext(), "NO CONNECT", Toast.LENGTH_LONG).show();
-
-            }
-        });
-
-        /////////////////////////////
+        textView = findViewById(R.id.textView);
     }
 
     /**
@@ -148,19 +136,43 @@ public class MainActivity extends AppCompatActivity {
                             if (djiError == DJISDKError.REGISTRATION_SUCCESS) {
                                 showToast("Register Success");
 
-                                //172.28.7.31
-                                //192.168.0.101
-                                //192.168.192.138
 
                                 DJISDKManager.getInstance().enableBridgeModeWithBridgeAppIP("192.168.192.64");
                                 DJISDKManager.getInstance().startConnectionToProduct();
-
+                                initFC();
 
                             } else {
                                 showToast("Register sdk fails, please check the bundle id and network connection!");
                             }
                             Log.v(TAG, djiError.getDescription());
                         }
+
+                        private void initFC() {
+
+                            if (MApplication.getProductInstance() == null) {
+                                flightController = null;
+                                showToast(getResources().getString(R.string.playback_disconnected));
+                            } else {
+                                Aircraft aircraft = (Aircraft) MApplication.getProductInstance();
+                                if (null != aircraft.getFlightController()) {
+                                    flightController = aircraft.getFlightController();
+                                    flightController.getSerialNumber(new CommonCallbacks.CompletionCallbackWith<String>() {
+                                        @Override
+                                        public void onSuccess(String s) {
+                                            serialNumber = s;
+                                            textView.setText(serialNumber);
+                                        }
+
+                                        @Override
+                                        public void onFailure(DJIError djiError) {
+                                            showToast("getSerialNumber failed: " + djiError.getDescription());
+                                        }
+                                    });
+                                }
+                            }
+
+                        }
+
 
                         @Override
                         public void onProductDisconnect() {
@@ -183,7 +195,10 @@ public class MainActivity extends AppCompatActivity {
                                                       BaseComponent newComponent) {
 
                             if (newComponent != null) {
+
+
                                 newComponent.setComponentListener(new BaseComponent.ComponentListener() {
+
 
                                     @Override
                                     public void onConnectivityChange(boolean isConnected) {
@@ -192,11 +207,7 @@ public class MainActivity extends AppCompatActivity {
                                     }
                                 });
                             }
-                            Log.d(TAG,
-                                    String.format("onComponentChange key:%s, oldComponent:%s, newComponent:%s",
-                                            componentKey,
-                                            oldComponent,
-                                            newComponent));
+                            Log.d(TAG, String.format("onComponentChange key:%s, oldComponent:%s, newComponent:%s", componentKey, oldComponent, newComponent));
 
                         }
 

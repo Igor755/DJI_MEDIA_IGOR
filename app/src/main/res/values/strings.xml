@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">DJI_MEDIA</string>
+    <string name="playback_disconnected">DJI_MEDIA</string>
+
 </resources>
